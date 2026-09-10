@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>출퇴근 관리 시스템</title>
   <style>
-    body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; padding: 10px; background-color: #f7f9fa; margin: 0; box-sizing: border-box; }
-    .card, .container { background: white; padding: 20px 10px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; }
-    h2 { color: #333; margin-bottom: 20px; font-size: 20px; }
-    h3 { color: #2b7a78; margin-top: 25px; text-align: left; font-size: 15px; border-bottom: 2px solid #3aafa9; padding-bottom: 5px; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; padding: 5px; background-color: #f7f9fa; margin: 0; box-sizing: border-box; }
+    .card, .container { background: white; padding: 15px 5px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; }
+    h2 { color: #333; margin-bottom: 15px; font-size: 18px; }
+    h3 { color: #2b7a78; margin-top: 20px; text-align: left; font-size: 14px; border-bottom: 2px solid #3aafa9; padding-bottom: 5px; padding-left: 5px; }
     button { font-size: 16px; padding: 14px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; -webkit-tap-highlight-color: transparent; }
     
     #home-view button { width: 100%; margin-bottom: 15px; padding: 16px 0; }
@@ -22,21 +22,21 @@
     .btn-out { background-color: #e2584d; }
     #message { margin-top: 20px; font-size: 15px; font-weight: bold; color: #2b7a78; line-height: 1.5; word-break: break-all; }
 
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
     .top-bar-right { display: flex; gap: 5px; }
     .top-bar button { padding: 8px 10px; font-size: 12px; background-color: #3aafa9; width: auto; }
     .btn-pw-change { background-color: #555 !important; }
     
     /* 📱 테이블 글자 크기 및 줄바꿈 방지 설정 */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: fixed; }
-    th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; }
+    th, td { padding: 8px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-    .btn-action { padding: 4px 5px; font-size: 9px; border-radius: 4px; margin: 1px; }
+    .btn-action { padding: 4px 5px; font-size: 10px; border-radius: 4px; margin: 1px; }
     .btn-edit { background-color: #f39c12; }
     .btn-del { background-color: #e74c3c; }
 
-    .back-link { display: block; margin-top: 25px; font-size: 14px; color: #888; text-decoration: none; cursor: pointer; }
+    .back-link { display: block; margin-top: 20px; font-size: 13px; color: #888; text-decoration: none; cursor: pointer; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10; box-sizing: border-box; padding: 20px; }
     .modal-content { background: white; padding: 25px 20px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; }
@@ -95,10 +95,10 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 15%;">날짜</th>
-          <th style="width: 14%;">이름</th>
-          <th style="width: 18%;">출근</th>
-          <th style="width: 18%;">퇴근</th>
+          <th style="width: 16%;">날짜</th>
+          <th style="width: 15%;">이름</th>
+          <th style="width: 17%;">출근</th>
+          <th style="width: 17%;">퇴근</th>
           <th style="width: 20%;">근무시간</th>
           <th style="width: 15%;">관리</th>
         </tr>
@@ -313,14 +313,25 @@
         } else {
           records.forEach(function(r) {
             var tr = document.createElement('tr');
-            var shortDate = r.date ? r.date.substring(5) : ''; // 연도를 빼고 월-일만 표시 (예: 09-10)
-            var outVal = r.checkOut || '-';
+            
+            // 날짜: 연도 제거하고 MM-DD만 표시 (예: 2026-09-10 -> 09-10)
+            var shortDate = r.date && r.date.length >= 10 ? r.date.substring(5, 10) : (r.date || '');
+            
+            // 출근 시간: 초(seconds) 제거하고 HH:mm까지만 표시 (예: 11:43:58 -> 11:43)
+            var shortIn = r.checkIn && r.checkIn.length >= 5 ? r.checkIn.substring(0, 5) : r.checkIn;
+            
+            // 퇴근 시간: 초(seconds) 제거하고 HH:mm까지만 표시
+            var shortOut = '-';
+            if (r.checkOut && r.checkOut !== '-') {
+              shortOut = r.checkOut.length >= 5 ? r.checkOut.substring(0, 5) : r.checkOut;
+            }
+
             var workStr = r.workTimeStr || '근무 중';
             
             tr.innerHTML = '<td>' + shortDate + '</td>' +
                            '<td>' + r.name + '</td>' +
-                           '<td style="color:#2b7a78;">' + r.checkIn + '</td>' +
-                           '<td style="color:#e2584d;">' + outVal + '</td>' +
+                           '<td style="color:#2b7a78;">' + shortIn + '</td>' +
+                           '<td style="color:#e2584d;">' + shortOut + '</td>' +
                            '<td style="font-weight:bold; color:#333;">' + workStr + '</td>' +
                            '<td>' +
                              '<button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \'' + (r.outRow || '') + '\')">수정</button>' +
