@@ -48,7 +48,7 @@
     .btn-cancel { background-color: #ccc; }
     .btn-modal-del { background-color: #e74c3c; width: 100%; margin-top: 8px; padding: 10px 0; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; }
 
-    .log-modal-content { background: white; padding: 20px 15px; border-radius: 16px; width: 100%; max-width: 480px; text-align: center; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
+    .log-modal-content { background: white; padding: 20px 15px; border-radius: 16px; width: 100%; max-width: 500px; text-align: center; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
     .log-table-container { overflow-y: auto; max-height: 350px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; }
   </style>
 </head>
@@ -180,17 +180,21 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 45%;">접속 시간</th>
-              <th style="width: 25%;">구분</th>
-              <th style="width: 30%;">관리자 이름</th>
+              <th style="width: 38%;">접속 시간</th>
+              <th style="width: 22%;">구분</th>
+              <th style="width: 25%;">관리자 이름</th>
+              <th id="log-action-th" style="width: 15%; display: none;">관리</th>
             </tr>
           </thead>
           <tbody id="log-list">
-            <tr><td colspan="3">로그 불러오는 중...</td></tr>
+            <tr><td colspan="4">로그 불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
-      <button class="btn-boss" style="width: 100%; margin-top: 10px; padding: 10px 0;" onclick="closeLogModal()">닫기</button>
+      <div style="display: flex; gap: 5px; margin-top: 10px;">
+        <button id="btn-clear-all-logs" class="btn-modal-del" style="display: none; margin-top:0; background-color:#c0392b;" onclick="clearAllLogs()">전체 로그 초기화</button>
+        <button class="btn-boss" style="width: 100%; padding: 10px 0;" onclick="closeLogModal()">닫기</button>
+      </div>
     </div>
   </div>
 
@@ -232,7 +236,6 @@
         document.getElementById('admin-view').style.display = 'block';
         document.getElementById('admin-title').innerText = '👑 ' + loggedInUser + ' 현황';
         
-        // 마스터일 때만 사장님 관리 버튼 노출
         if (loggedInRole === 'master') {
           document.getElementById('btn-boss-manage').style.display = 'inline-block';
         } else {
@@ -257,6 +260,12 @@
 
     function openLogModal() {
       document.getElementById('log-modal').style.display = 'flex';
+
+      // 마스터(`admin`)일 때만 로그 관리 열 및 전체 삭제 버튼 표시
+      var isMaster = (loggedInRole === 'master');
+      document.getElementById('log-action-th').style.display = isMaster ? 'table-cell' : 'none';
+      document.getElementById('btn-clear-all-logs').style.display = isMaster ? 'block' : 'none';
+
       fetch(WEB_APP_URL + '?action=getLogs')
       .then(res => res.json())
       .then(data => {
@@ -264,19 +273,50 @@
         var logTbody = document.getElementById('log-list');
         logTbody.innerHTML = '';
         if (logs.length === 0) {
-          logTbody.innerHTML = '<tr><td colspan="3">기록된 접속 로그가 없습니다.</td></tr>';
+          var colspanNum = isMaster ? 4 : 3;
+          logTbody.innerHTML = '<tr><td colspan="' + colspanNum + '">기록된 접속 로그가 없습니다.</td></tr>';
           return;
         }
         logs.forEach(function(l) {
           var tr = document.createElement('tr');
-          tr.innerHTML = '<td style="font-size:10px;">' + l.time + '</td>' +
-                         '<td style="font-size:10px; color:#2b7a78;">' + l.type + '</td>' +
-                         '<td style="font-weight:bold; font-size:11px;">' + l.name + '</td>';
+          var html = '<td style="font-size:10px;">' + l.time + '</td>' +
+                     '<td style="font-size:10px; color:#2b7a78;">' + l.type + '</td>' +
+                     '<td style="font-weight:bold; font-size:11px;">' + l.name + '</td>';
+          if (isMaster) {
+            html += '<td><button class="btn-action" style="background-color:#e74c3c;" onclick="deleteLog(' + l.row + ')">삭제</button></td>';
+          }
+          tr.innerHTML = html;
           logTbody.appendChild(tr);
         });
       });
     }
     function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; }
+
+    function deleteLog(row) {
+      if (!confirm('이 접속 로그를 삭제하시겠습니까?')) return;
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'deleteLog', row: row })
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) openLogModal(); // 로그 창 새로고침
+      });
+    }
+
+    function clearAllLogs() {
+      if (!confirm('경고: 모든 접속 로그 기록이 영구적으로 삭제됩니다. 정말 초기화하시겠습니까?')) return;
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'clearAllLogs' })
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) openLogModal(); // 로그 창 새로고침
+      });
+    }
 
     function openBossManageModal() {
       document.getElementById('boss-manage-modal').style.display = 'flex';
