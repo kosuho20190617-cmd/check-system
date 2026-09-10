@@ -267,9 +267,12 @@
       })
       .then(res => res.json())
       .then(res => {
-        if (res.hasOmission) {
+        if (type === '출근' && res.hasOmission) {
           alert('⚠️ 출근이 등록 되지 않았습니다.');
           document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">출근이 등록 되지 않았습니다.</span>';
+        } else if (type === '퇴근' && res.hasOmission) {
+          alert('⚠️ 퇴근이 등록 되지 않았습니다.');
+          document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">퇴근이 등록 되지 않았습니다.</span>';
         } else {
           document.getElementById('message').innerHTML = '<span style="color:#2b7a78;">' + res.message + '</span>';
         }
