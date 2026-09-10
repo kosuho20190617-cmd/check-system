@@ -6,7 +6,7 @@
   <title>출퇴근 관리 시스템</title>
   <style>
     body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; padding: 5px; background-color: #f7f9fa; margin: 0; box-sizing: border-box; }
-    .card, .container { background: white; padding: 15px 5px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; }
+    .card, .container { background: white; padding: 15px 5px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; position: relative; }
     h2 { color: #333; margin-bottom: 15px; font-size: 18px; }
     h3 { color: #2b7a78; margin-top: 20px; text-align: left; font-size: 14px; border-bottom: 2px solid #3aafa9; padding-bottom: 5px; padding-left: 5px; }
     button { font-size: 16px; padding: 14px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; -webkit-tap-highlight-color: transparent; }
@@ -44,7 +44,8 @@
     .btn-action { padding: 4px 8px; font-size: 10px; border-radius: 4px; margin: 0; display: inline-block; }
     .btn-edit { background-color: #f39c12; }
 
-    .back-link { display: block; margin-top: 20px; font-size: 13px; color: #888; text-decoration: none; cursor: pointer; }
+    .btn-main { position: absolute; top: 12px; left: 12px; background-color: #f0f0f0; border: 1px solid #ccc; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; color: #444; width: auto; }
+    .btn-main:hover { background-color: #e4e4e4; }
     
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10; box-sizing: border-box; padding: 20px; }
     .modal-content { background: white; padding: 25px 20px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; box-sizing: border-box; }
@@ -64,6 +65,7 @@
   </div>
 
   <div id="staff-view" class="card" style="display: none;">
+    <button class="btn-main" onclick="switchView('home')">🏠 메인 화면</button>
     <h2>👤 직원 출퇴근 체크</h2>
     <div>
       <input type="text" id="name" placeholder="이름을 입력하세요">
@@ -73,10 +75,10 @@
       <button class="btn-out" onclick="sendData('퇴근')">퇴근하기</button>
     </div>
     <div id="message"></div>
-    <a class="back-link" onclick="switchView('home')">← 처음 화면으로 돌아가기</a>
   </div>
 
   <div id="admin-view" class="container" style="display: none;">
+    <button class="btn-main" onclick="switchView('home')">🏠 메인 화면</button>
     <h2>👑 사장님 취합 현황</h2>
     <div class="top-bar">
       <span id="update-time" style="font-size: 11px; color: #666;">대기 중...</span>
@@ -116,8 +118,6 @@
         <tr><td colspan="6">데이터 불러오는 중...</td></tr>
       </tbody>
     </table>
-
-    <a class="back-link" onclick="switchView('home')">← 처음 화면으로 돌아가기</a>
   </div>
 
   <div id="login-modal" class="modal">
