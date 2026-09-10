@@ -267,7 +267,8 @@
       })
       .then(res => res.json())
       .then(res => {
-        if (res.hasOmission) {
+        // 서버에서 보낸 hasOmission 값이 true이면 경고 팝업 및 메시지 출력
+        if (res.hasOmission === true) {
           alert('⚠️ 출근이 등록 되지 않았습니다.');
           document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">출근이 등록 되지 않았습니다.</span>';
         } else {
@@ -276,7 +277,6 @@
       })
       .catch(err => alert('통신 오류: ' + err));
     }
-
     function loadData() {
       document.getElementById('update-time').innerText = '데이터 가져오는 중...';
       
