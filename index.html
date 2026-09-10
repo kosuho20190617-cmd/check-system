@@ -27,12 +27,12 @@
     .top-bar button { padding: 8px 10px; font-size: 12px; background-color: #3aafa9; width: auto; }
     .btn-pw-change { background-color: #555 !important; }
     
-    /* 📱 테이블 글자 크기 및 줄바꿈 방지 설정 */
+    /* 📱 테이블 설정 (출퇴근 칸을 넓히고 날짜를 2줄로 배치하기 위한 비율 조정) */
     table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; }
-    th, td { padding: 8px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
     th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-    .btn-action { padding: 4px 5px; font-size: 10px; border-radius: 4px; margin: 1px; }
+    .btn-action { padding: 4px 6px; font-size: 10px; border-radius: 4px; margin: 1px; display: inline-block; }
     .btn-edit { background-color: #f39c12; }
     .btn-del { background-color: #e74c3c; }
 
@@ -44,6 +44,7 @@
     .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
     .modal-btns button { width: 50%; padding: 12px 0; margin-bottom: 0; font-size: 14px; }
     .btn-cancel { background-color: #ccc; }
+    .btn-modal-del { background-color: #e74c3c; width: 100%; margin-top: 8px; padding: 10px 0; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -95,11 +96,11 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 16%;">날짜</th>
-          <th style="width: 15%;">이름</th>
-          <th style="width: 17%;">출근</th>
-          <th style="width: 17%;">퇴근</th>
-          <th style="width: 20%;">근무시간</th>
+          <th style="width: 13%;">날짜</th>
+          <th style="width: 14%;">이름</th>
+          <th style="width: 21%;">출근</th>
+          <th style="width: 21%;">퇴근</th>
+          <th style="width: 16%;">근무시간</th>
           <th style="width: 15%;">관리</th>
         </tr>
       </thead>
@@ -148,6 +149,7 @@
         <button class="btn-cancel" onclick="closeEditModal()">취소</button>
         <button class="btn-boss" onclick="saveEditedTime()">저장</button>
       </div>
+      <button class="btn-action btn-modal-del" onclick="deleteRecordFromModal()">이 기록 삭제하기</button>
     </div>
   </div>
 
@@ -314,29 +316,39 @@
           records.forEach(function(r) {
             var tr = document.createElement('tr');
             
-            // 날짜: MM-DD만 표시
-            var shortDate = r.date && r.date.length >= 10 ? r.date.substring(5, 10) : (r.date || '');
+            // 날짜를 2줄로 표시: 위쪽은 yyyy, 아래쪽은 mm-dd (또는 dd-mm 요청 반영)
+            var yearPart = "";
+            var mdPart = "";
+            if (r.date && r.date.length >= 10) {
+              yearPart = r.date.substring(0, 4);
+              var mStr = r.date.substring(5, 7);
+              var dStr = r.date.substring(8, 10);
+              mdPart = dStr + '-' + mStr; // dd-mm 형식
+            } else {
+              mdPart = r.date || '';
+            }
+            var dateHtml = '<div style="font-size:9px; color:#888; line-height:1;">' + yearPart + '</div>' +
+                           '<div style="font-size:11px; font-weight:bold; line-height:1.2; margin-top:1px;">' + mdPart + '</div>';
             
-            // 출근 시간: HH:mm까지만 표시
-            var shortIn = r.checkIn && r.checkIn.length >= 5 ? r.checkIn.substring(0, 5) : r.checkIn;
+            // 출근 시간: HH:mm:ss 전체 표시
+            var fullIn = r.checkIn && r.checkIn !== '-' ? r.checkIn : '-';
             
-            // 퇴근 시간: HH:mm까지만 표시
-            var shortOut = '-';
+            // 퇴근 시간: HH:mm:ss 전체 표시
+            var fullOut = '-';
             if (r.checkOut && r.checkOut !== '-') {
-              shortOut = r.checkOut.length >= 5 ? r.checkOut.substring(0, 5) : r.checkOut;
+              fullOut = r.checkOut;
             }
 
-            // 근무시간: 초 단위(예: 'X초') 제거하고 시간/분까지만 표시
+            // 근무시간: 초 단위 제거 유지
             var workStr = r.workTimeStr || '근무 중';
             if (workStr !== '근무 중') {
-              // '2시간 1분 48초' 형태에서 ' OO초' 부분을 공백으로 치환하여 제거
               workStr = workStr.replace(/\s*\d+초$/, '');
             }
             
-            tr.innerHTML = '<td>' + shortDate + '</td>' +
+            tr.innerHTML = '<td>' + dateHtml + '</td>' +
                            '<td>' + r.name + '</td>' +
-                           '<td style="color:#2b7a78;">' + shortIn + '</td>' +
-                           '<td style="color:#e2584d;">' + shortOut + '</td>' +
+                           '<td style="color:#2b7a78; font-size:10px;">' + fullIn + '</td>' +
+                           '<td style="color:#e2584d; font-size:10px;">' + fullOut + '</td>' +
                            '<td style="font-weight:bold; color:#333;">' + workStr + '</td>' +
                            '<td>' +
                              '<button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \'' + (r.outRow || '') + '\')">수정</button>' +
@@ -396,6 +408,12 @@
         }
       })
       .catch(err => alert('통신 오류: ' + err));
+    }
+
+    function deleteRecordFromModal() {
+      if (!currentEditRow) return;
+      deleteRecord(currentEditRow.inRow, currentEditRow.outRow);
+      closeEditModal();
     }
 
     function deleteRecord(inRow, outRow) {
