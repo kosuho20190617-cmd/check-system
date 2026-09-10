@@ -162,7 +162,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxPYYNJsxgBTPLdjuPV9oVMLM0vLq3ftBnF9IeVyk_42jlpvOVs3wJdaPpN4pFjf_R8bw/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyUq27pXPEUVAPeE8wBG_kXZlO6WMK7XjpE-krgZKDqTTvqMj-phpG--tDC-BP7mGZJ9Q/exec";
 
     var currentEditRow = null;
 
@@ -267,8 +267,7 @@
       })
       .then(res => res.json())
       .then(res => {
-        // 서버에서 보낸 hasOmission 값이 true이면 경고 팝업 및 메시지 출력
-        if (res.hasOmission === true) {
+        if (res.hasOmission) {
           alert('⚠️ 출근이 등록 되지 않았습니다.');
           document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">출근이 등록 되지 않았습니다.</span>';
         } else {
@@ -277,6 +276,7 @@
       })
       .catch(err => alert('통신 오류: ' + err));
     }
+
     function loadData() {
       document.getElementById('update-time').innerText = '데이터 가져오는 중...';
       
