@@ -29,10 +29,10 @@
     
     /* 📱 테이블 글자 크기 및 줄바꿈 방지 설정 */
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: fixed; }
-    th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; }
+    th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-    .btn-action { padding: 4px 6px; font-size: 10px; border-radius: 4px; margin: 1px; }
+    .btn-action { padding: 4px 5px; font-size: 9px; border-radius: 4px; margin: 1px; }
     .btn-edit { background-color: #f39c12; }
     .btn-del { background-color: #e74c3c; }
 
@@ -95,12 +95,12 @@
     <table>
       <thead>
         <tr>
-          <th style="width: 22%;">날짜</th>
-          <th style="width: 13%;">이름</th>
-          <th style="width: 17%;">출근</th>
-          <th style="width: 17%;">퇴근</th>
-          <th style="width: 17%;">근무시간</th>
-          <th style="width: 14%;">관리</th>
+          <th style="width: 15%;">날짜</th>
+          <th style="width: 14%;">이름</th>
+          <th style="width: 18%;">출근</th>
+          <th style="width: 18%;">퇴근</th>
+          <th style="width: 20%;">근무시간</th>
+          <th style="width: 15%;">관리</th>
         </tr>
       </thead>
       <tbody id="record-list">
@@ -313,10 +313,11 @@
         } else {
           records.forEach(function(r) {
             var tr = document.createElement('tr');
+            var shortDate = r.date ? r.date.substring(5) : ''; // 연도를 빼고 월-일만 표시 (예: 09-10)
             var outVal = r.checkOut || '-';
             var workStr = r.workTimeStr || '근무 중';
             
-            tr.innerHTML = '<td>' + r.date + '</td>' +
+            tr.innerHTML = '<td>' + shortDate + '</td>' +
                            '<td>' + r.name + '</td>' +
                            '<td style="color:#2b7a78;">' + r.checkIn + '</td>' +
                            '<td style="color:#e2584d;">' + outVal + '</td>' +
@@ -343,11 +344,6 @@
       document.getElementById('edit-in-time').value = rawIn;
       document.getElementById('edit-out-time').value = rawOut;
       document.getElementById('edit-modal').style.display = 'flex';
-    }
-
-    function closeEditManager() {
-      document.getElementById('edit-modal').style.display = 'none';
-      currentEditRow = null;
     }
 
     function closeEditModal() {
