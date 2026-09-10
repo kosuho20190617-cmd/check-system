@@ -268,8 +268,8 @@
       .then(res => res.json())
       .then(res => {
         if (res.hasOmission) {
-          alert('⚠️ 이전 근무 퇴근 누락이 감지되었습니다!');
-          document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">' + res.message + '</span>';
+          alert('⚠️ 출근이 등록 되지 않았습니다.');
+          document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">출근이 등록 되지 않았습니다.</span>';
         } else {
           document.getElementById('message').innerHTML = '<span style="color:#2b7a78;">' + res.message + '</span>';
         }
