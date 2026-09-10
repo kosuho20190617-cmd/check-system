@@ -314,19 +314,24 @@
           records.forEach(function(r) {
             var tr = document.createElement('tr');
             
-            // 날짜: 연도 제거하고 MM-DD만 표시 (예: 2026-09-10 -> 09-10)
+            // 날짜: MM-DD만 표시
             var shortDate = r.date && r.date.length >= 10 ? r.date.substring(5, 10) : (r.date || '');
             
-            // 출근 시간: 초(seconds) 제거하고 HH:mm까지만 표시 (예: 11:43:58 -> 11:43)
+            // 출근 시간: HH:mm까지만 표시
             var shortIn = r.checkIn && r.checkIn.length >= 5 ? r.checkIn.substring(0, 5) : r.checkIn;
             
-            // 퇴근 시간: 초(seconds) 제거하고 HH:mm까지만 표시
+            // 퇴근 시간: HH:mm까지만 표시
             var shortOut = '-';
             if (r.checkOut && r.checkOut !== '-') {
               shortOut = r.checkOut.length >= 5 ? r.checkOut.substring(0, 5) : r.checkOut;
             }
 
+            // 근무시간: 초 단위(예: 'X초') 제거하고 시간/분까지만 표시
             var workStr = r.workTimeStr || '근무 중';
+            if (workStr !== '근무 중') {
+              // '2시간 1분 48초' 형태에서 ' OO초' 부분을 공백으로 치환하여 제거
+              workStr = workStr.replace(/\s*\d+초$/, '');
+            }
             
             tr.innerHTML = '<td>' + shortDate + '</td>' +
                            '<td>' + r.name + '</td>' +
