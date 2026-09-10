@@ -2,12 +2,11 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- 📱 모바일 화면 크기에 맞게 자동 조절되도록 뷰포트 설정 추가 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>출퇴근 관리 시스템</title>
   <style>
-    body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; padding: 15px; background-color: #f7f9fa; margin: 0; box-sizing: border-box; }
-    .card, .container { background: white; padding: 25px 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; text-align: center; padding: 10px; background-color: #f7f9fa; margin: 0; box-sizing: border-box; }
+    .card, .container { background: white; padding: 20px 10px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 560px; width: 100%; margin: 10px auto; box-sizing: border-box; }
     h2 { color: #333; margin-bottom: 20px; font-size: 20px; }
     h3 { color: #2b7a78; margin-top: 25px; text-align: left; font-size: 15px; border-bottom: 2px solid #3aafa9; padding-bottom: 5px; }
     button { font-size: 16px; padding: 14px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; -webkit-tap-highlight-color: transparent; }
@@ -28,11 +27,12 @@
     .top-bar button { padding: 8px 10px; font-size: 12px; background-color: #3aafa9; width: auto; }
     .btn-pw-change { background-color: #555 !important; }
     
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-    th, td { padding: 8px 4px; border-bottom: 1px solid #eee; text-align: center; word-break: break-all; }
-    th { background-color: #f1f3f5; color: #333; }
+    /* 📱 테이블 글자 크기 및 줄바꿈 방지 설정 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: fixed; }
+    th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; }
+    th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-    .btn-action { padding: 5px 8px; font-size: 11px; border-radius: 4px; margin: 1px; }
+    .btn-action { padding: 4px 6px; font-size: 10px; border-radius: 4px; margin: 1px; }
     .btn-edit { background-color: #f39c12; }
     .btn-del { background-color: #e74c3c; }
 
@@ -95,12 +95,12 @@
     <table>
       <thead>
         <tr>
-          <th>날짜</th>
-          <th>이름</th>
-          <th>출근</th>
-          <th>퇴근</th>
-          <th>근무시간</th>
-          <th>관리</th>
+          <th style="width: 22%;">날짜</th>
+          <th style="width: 13%;">이름</th>
+          <th style="width: 17%;">출근</th>
+          <th style="width: 17%;">퇴근</th>
+          <th style="width: 17%;">근무시간</th>
+          <th style="width: 14%;">관리</th>
         </tr>
       </thead>
       <tbody id="record-list">
@@ -152,7 +152,6 @@
   </div>
 
   <script>
-    // ⚠️ [중요] 구글 앱스 스크립트 '웹 앱' 배포 후 생성된 URL을 여기에 넣어주세요!
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyUq27pXPEUVAPeE8wBG_kXZlO6WMK7XjpE-krgZKDqTTvqMj-phpG--tDC-BP7mGZJ9Q/exec";
 
     var currentEditRow = null;
@@ -346,6 +345,11 @@
       document.getElementById('edit-modal').style.display = 'flex';
     }
 
+    function closeEditManager() {
+      document.getElementById('edit-modal').style.display = 'none';
+      currentEditRow = null;
+    }
+
     function closeEditModal() {
       document.getElementById('edit-modal').style.display = 'none';
       currentEditRow = null;
@@ -386,7 +390,7 @@
       if (!confirm('정말 이 출퇴근 기록을 삭제하시겠습니까?')) return;
 
       fetch(WEB_APP_URL, {
-        model: 'POST',
+        method: 'POST',
         body: JSON.stringify({
           action: 'deleteRecord',
           inRow: inRow,
