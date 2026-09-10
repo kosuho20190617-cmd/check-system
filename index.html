@@ -27,19 +27,13 @@
     .top-bar button { padding: 8px 8px; font-size: 11px; background-color: #3aafa9; width: auto; }
     .btn-pw-change { background-color: #555 !important; }
     .btn-log-view { background-color: #2980b9 !important; }
+    .btn-boss-manage { background-color: #8e44ad !important; display: none; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; }
     th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
     th { background-color: #f1f3f5; color: #333; font-size: 11px; }
 
-    td.action-cell {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-bottom: 1px solid #eee;
-      padding: 12px 0;
-    }
-
+    td.action-cell { display: flex; justify-content: center; align-items: center; border-bottom: 1px solid #eee; padding: 12px 0; }
     .btn-action { padding: 4px 8px; font-size: 10px; border-radius: 4px; margin: 0; display: inline-block; }
     .btn-edit { background-color: #f39c12; }
 
@@ -54,7 +48,6 @@
     .btn-cancel { background-color: #ccc; }
     .btn-modal-del { background-color: #e74c3c; width: 100%; margin-top: 8px; padding: 10px 0; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; }
 
-    /* 로그 전용 모달 스타일 (크기를 더 넓게) */
     .log-modal-content { background: white; padding: 20px 15px; border-radius: 16px; width: 100%; max-width: 480px; text-align: center; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
     .log-table-container { overflow-y: auto; max-height: 350px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; }
   </style>
@@ -64,7 +57,7 @@
   <div id="home-view" class="card">
     <h2>🏢 출퇴근 기록 시스템</h2>
     <button class="btn-staff" onclick="switchView('staff')">👤 직원</button>
-    <button class="btn-boss" onclick="openLoginModal()">👑 사장님</button>
+    <button class="btn-boss" onclick="openLoginModal()">👑 관리자 로그인</button>
   </div>
 
   <div id="staff-view" class="card" style="display: none;">
@@ -82,10 +75,11 @@
 
   <div id="admin-view" class="container" style="display: none;">
     <button class="btn-main" onclick="switchView('home')">🏠 메인 화면</button>
-    <h2 id="admin-title">👑 사장님 취합 현황</h2>
+    <h2 id="admin-title">👑 관리자 현황</h2>
     <div class="top-bar">
       <span id="update-time" style="font-size: 11px; color: #666;">대기 중...</span>
       <div class="top-bar-right">
+        <button id="btn-boss-manage" class="btn-boss-manage" onclick="openBossManageModal()">사장님 관리</button>
         <button class="btn-log-view" onclick="openLogModal()">접속로그</button>
         <button class="btn-pw-change" onclick="openPwModal()">비번변경</button>
         <button onclick="loadData()">새로고침</button>
@@ -124,11 +118,12 @@
     </table>
   </div>
 
+  <!-- 로그인 모달 -->
   <div id="login-modal" class="modal">
     <div class="modal-content">
-      <h3>사장님 로그인</h3>
-      <p style="font-size: 13px; color: #666; margin-bottom: 12px;">이름과 비밀번호를 입력하세요.</p>
-      <input type="text" id="login-boss-name" placeholder="이름 (예: 홍길동)">
+      <h3>관리자 로그인</h3>
+      <p style="font-size: 12px; color: #666; margin-bottom: 12px;">아이디 또는 사장님 이름을 입력하세요.<br>(마스터 초기 아이디: <b>admin</b>)</p>
+      <input type="text" id="login-id" placeholder="아이디 또는 이름">
       <input type="password" id="admin-pw" placeholder="비밀번호 입력">
       <div class="modal-btns">
         <button class="btn-cancel" onclick="closeLoginModal()">취소</button>
@@ -137,11 +132,10 @@
     </div>
   </div>
 
+  <!-- 비밀번호 변경 모달 -->
   <div id="pw-modal" class="modal">
     <div class="modal-content">
       <h3>비밀번호 변경</h3>
-      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">이름과 현재/새 비밀번호를 입력하세요.</p>
-      <input type="text" id="pw-boss-name" placeholder="이름 (예: 홍길동)">
       <input type="password" id="current-pw" placeholder="현재 비밀번호">
       <input type="password" id="new-pw" placeholder="새 비밀번호">
       <div class="modal-btns">
@@ -151,18 +145,44 @@
     </div>
   </div>
 
-  <!-- 사장님 접속 로그 확인 모달 -->
+  <!-- 사장님 관리 모달 (마스터 전용) -->
+  <div id="boss-manage-modal" class="modal">
+    <div class="log-modal-content">
+      <h3>👑 사장님 계정 관리</h3>
+      <p style="font-size: 11px; color: #666; margin-bottom: 5px;">새로운 사장님 계정을 추가하거나 삭제합니다.</p>
+      <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <input type="text" id="new-boss-name" placeholder="사장님 이름" style="margin:0; font-size:13px; padding:8px;">
+        <input type="password" id="new-boss-pw" placeholder="비밀번호" style="margin:0; font-size:13px; padding:8px;">
+        <button class="btn-boss" style="padding: 8px 12px; font-size: 12px; width: auto;" onclick="addBoss()">추가</button>
+      </div>
+      <div class="log-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60%;">사장님 이름</th>
+              <th style="width: 40%;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="boss-list-tbody">
+            <tr><td colspan="2">목록 로딩 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn-boss" style="width: 100%; margin-top: 10px; padding: 10px 0;" onclick="closeBossManageModal()">닫기</button>
+    </div>
+  </div>
+
+  <!-- 접속 로그 모달 -->
   <div id="log-modal" class="modal">
     <div class="log-modal-content">
-      <h3>👑 사장님 로그인 접속 로그</h3>
-      <p style="font-size: 11px; color: #666; margin-bottom: 5px;">구글 시트의 '접속로그' 시트 기록을 불러옵니다.</p>
+      <h3>👑 관리자 로그인 접속 로그</h3>
       <div class="log-table-container">
         <table>
           <thead>
             <tr>
               <th style="width: 45%;">접속 시간</th>
               <th style="width: 25%;">구분</th>
-              <th style="width: 30%;">사장님 이름</th>
+              <th style="width: 30%;">관리자 이름</th>
             </tr>
           </thead>
           <tbody id="log-list">
@@ -174,6 +194,7 @@
     </div>
   </div>
 
+  <!-- 기록 수정 모달 -->
   <div id="edit-modal" class="modal">
     <div class="modal-content">
       <h3>근무 시간 수정</h3>
@@ -194,7 +215,8 @@
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWTc1QpimuQNYxvncGAFqMix9tbvwDheyZBS9F4tUcNmiCr8W_idfzNbo73wsia9I6ug/exec";
 
     var currentEditRow = null;
-    var loggedInBoss = "";
+    var loggedInUser = "";
+    var loggedInRole = ""; // 'master' 또는 'boss'
 
     function switchView(viewName) {
       document.getElementById('home-view').style.display = 'none';
@@ -208,64 +230,38 @@
         document.getElementById('name').focus();
       } else if (viewName === 'admin') {
         document.getElementById('admin-view').style.display = 'block';
-        document.getElementById('admin-title').innerText = '👑 ' + loggedInBoss + ' 사장님 취합 현황';
+        document.getElementById('admin-title').innerText = '👑 ' + loggedInUser + ' 현황';
+        
+        // 마스터일 때만 사장님 관리 버튼 노출
+        if (loggedInRole === 'master') {
+          document.getElementById('btn-boss-manage').style.display = 'inline-block';
+        } else {
+          document.getElementById('btn-boss-manage').style.display = 'none';
+        }
         loadData();
       }
     }
 
     function openLoginModal() {
       document.getElementById('login-modal').style.display = 'flex';
-      document.getElementById('login-boss-name').focus();
+      document.getElementById('login-id').focus();
     }
-    
     function closeLoginModal() {
       document.getElementById('login-modal').style.display = 'none';
-      document.getElementById('login-boss-name').value = '';
+      document.getElementById('login-id').value = '';
       document.getElementById('admin-pw').value = '';
     }
 
-    function openPwModal() {
-      document.getElementById('pw-modal').style.display = 'flex';
-      document.getElementById('pw-boss-name').focus();
-    }
-
-    function closePwModal() {
-      document.getElementById('pw-modal').style.display = 'none';
-      document.getElementById('pw-boss-name').value = '';
-      document.getElementById('current-pw').value = '';
-      document.getElementById('new-pw').value = '';
-    }
+    function openPwModal() { document.getElementById('pw-modal').style.display = 'flex'; document.getElementById('current-pw').focus(); }
+    function closePwModal() { document.getElementById('pw-modal').style.display = 'none'; document.getElementById('current-pw').value = ''; document.getElementById('new-pw').value = ''; }
 
     function openLogModal() {
       document.getElementById('log-modal').style.display = 'flex';
-      loadAdminLogs();
-    }
-
-    function closeLogModal() {
-      document.getElementById('log-modal').style.display = 'none';
-    }
-
-    function loadAdminLogs() {
-      var logTbody = document.getElementById('log-list');
-      logTbody.innerHTML = '<tr><td colspan="3">로그 불러오는 중...</td></tr>';
-
-      fetch(WEB_APP_URL + '?action=getData')
-      .then(res => res.json())
-      .then(result => {
-        // 접속 로그를 가져오기 위해 별도로 시트 데이터를 가져오는 대신, 
-        // 앱 스크립트에 로그 조회를 요청하는 액션을 추가하거나 전체 시트 데이터에서 파싱할 수 있습니다.
-        // 현재 Apps Script 구조상 doGet으로는 main시트만 가져오므로, 
-        // 접속로그를 편하게 불러오기 위해 아래와 같이 별도 fetch나 기존 코드를 활용할 수 있습니다.
-      })
-      .catch(err => {
-        logTbody.innerHTML = '<tr><td colspan="3">로그 불러오기 실패</td></tr>';
-      });
-
-      // 백엔드에서 로그 시트 데이터를 가져오는 로직 추가 구현
       fetch(WEB_APP_URL + '?action=getLogs')
       .then(res => res.json())
       .then(data => {
         var logs = data.logs || [];
+        var logTbody = document.getElementById('log-list');
         logTbody.innerHTML = '';
         if (logs.length === 0) {
           logTbody.innerHTML = '<tr><td colspan="3">기록된 접속 로그가 없습니다.</td></tr>';
@@ -278,30 +274,84 @@
                          '<td style="font-weight:bold; font-size:11px;">' + l.name + '</td>';
           logTbody.appendChild(tr);
         });
+      });
+    }
+    function closeLogModal() { document.getElementById('log-modal').style.display = 'none'; }
+
+    function openBossManageModal() {
+      document.getElementById('boss-manage-modal').style.display = 'flex';
+      loadBossList();
+    }
+    function closeBossManageModal() { document.getElementById('boss-manage-modal').style.display = 'none'; }
+
+    function loadBossList() {
+      fetch(WEB_APP_URL + '?action=getAdminConfig')
+      .then(res => res.json())
+      .then(data => {
+        var bossList = data.bossList || [];
+        var tbody = document.getElementById('boss-list-tbody');
+        tbody.innerHTML = '';
+        if (bossList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="2">등록된 사장님이 없습니다.</td></tr>';
+          return;
+        }
+        bossList.forEach(function(b) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td style="font-weight:bold;">' + b.name + '</td>' +
+                         '<td><button class="btn-action" style="background-color:#e74c3c;" onclick="deleteBoss(\'' + b.name + '\')">삭제</button></td>';
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function addBoss() {
+      var name = document.getElementById('new-boss-name').value.trim();
+      var pw = document.getElementById('new-boss-pw').value.trim();
+      if (!name || !pw) { alert('이름과 비밀번호를 입력해주세요.'); return; }
+
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'addBoss', bossName: name, bossPw: pw })
       })
-      .catch(err => {
-        logTbody.innerHTML = '<tr><td colspan="3">로그 데이터 로드 오류</td></tr>';
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) {
+          document.getElementById('new-boss-name').value = '';
+          document.getElementById('new-boss-pw').value = '';
+          loadBossList();
+        }
+      });
+    }
+
+    function deleteBoss(name) {
+      if (!confirm(name + ' 사장님 계정을 삭제하시겠습니까?')) return;
+      fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'deleteBoss', bossName: name })
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        if (res.success) loadBossList();
       });
     }
 
     function checkPassword() {
-      var bossName = document.getElementById('login-boss-name').value.trim();
+      var loginId = document.getElementById('login-id').value.trim();
       var pw = document.getElementById('admin-pw').value;
 
-      if (!bossName) {
-        alert('이름을 입력해주세요.');
-        document.getElementById('login-boss-name').focus();
-        return;
-      }
+      if (!loginId) { alert('아이디(이름)를 입력해주세요.'); return; }
 
       fetch(WEB_APP_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'verifyAdmin', bossName: bossName, password: pw })
+        body: JSON.stringify({ action: 'verifyAdmin', loginId: loginId, password: pw })
       })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          loggedInBoss = bossName;
+          loggedInUser = data.name;
+          loggedInRole = data.role;
           closeLoginModal();
           switchView('admin');
         } else {
@@ -309,53 +359,32 @@
           document.getElementById('admin-pw').value = '';
           document.getElementById('admin-pw').focus();
         }
-      })
-      .catch(err => alert('통신 오류: ' + err));
+      });
     }
 
     function changePassword() {
-      var bossName = document.getElementById('pw-boss-name').value.trim();
       var currentPw = document.getElementById('current-pw').value;
       var newPw = document.getElementById('new-pw').value;
-
-      if (!bossName) {
-        alert('이름을 입력해주세요.');
-        document.getElementById('pw-boss-name').focus();
-        return;
-      }
+      var targetId = (loggedInRole === 'master') ? 'admin' : loggedInUser;
 
       fetch(WEB_APP_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: 'updatePassword', bossName: bossName, currentPw: currentPw, newPw: newPw })
+        body: JSON.stringify({ action: 'updatePassword', loginId: targetId, currentPw: currentPw, newPw: newPw })
       })
       .then(res => res.json())
       .then(res => {
         alert(res.message);
-        if (res.success) {
-          closePwModal();
-        } else {
-          document.getElementById('current-pw').value = '';
-          document.getElementById('new-pw').value = '';
-          document.getElementById('current-pw').focus();
-        }
-      })
-      .catch(err => alert('통신 오류: ' + err));
+        if (res.success) closePwModal();
+      });
     }
 
     function sendData(type) {
       var nameInput = document.getElementById('name');
       var name = nameInput.value.trim();
-      if (!name) {
-        alert('이름을 입력해주세요.');
-        nameInput.focus();
-        return;
-      }
+      if (!name) { alert('이름을 입력해주세요.'); nameInput.focus(); return; }
 
       var nowTime = new Date().toLocaleTimeString();
-      document.getElementById('message').innerHTML = 
-        '<span style="color:#2b7a78;">[' + nowTime + ']</span><br>' + 
-        name + '님 ' + type + ' 처리 중...';
-      
+      document.getElementById('message').innerHTML = '<span style="color:#2b7a78;">[' + nowTime + ']</span><br>' + name + '님 ' + type + ' 처리 중...';
       nameInput.value = '';
 
       fetch(WEB_APP_URL, {
@@ -364,35 +393,17 @@
       })
       .then(res => res.json())
       .then(res => {
-        if (res.hasOmission) {
-          if (type === '출근') {
-            alert('⚠️ 이미 출근 상태이거나 퇴근 누락이 있습니다.');
-            document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">이미 출근 상태입니다. (퇴근 먼저 처리 필요)</span>';
-          } else {
-            alert('⚠️ 퇴근이 등록 되지 않았습니다. (출근 기록 없음)');
-            document.getElementById('message').innerHTML = '<span style="color:#e2584d; font-weight:bold;">퇴근이 등록 되지 않았습니다.</span>';
-          }
-        } else {
-          document.getElementById('message').innerHTML = '<span style="color:#2b7a78;">' + res.message + '</span>';
-        }
-      })
-      .catch(err => alert('통신 오류: ' + err));
+        document.getElementById('message').innerHTML = '<span style="color:#2b7a78;">' + res.message + '</span>';
+      });
     }
 
     function loadData() {
       document.getElementById('update-time').innerText = '데이터 가져오는 중...';
-      
       fetch(WEB_APP_URL + '?action=getData')
       .then(res => res.json())
       .then(result => {
-        if (result.error) {
-          alert("에러 발생: " + result.error);
-          return;
-        }
-
         var records = result.records || [];
         var summary = result.monthlySummary || {};
-
         var summaryTbody = document.getElementById('summary-list');
         summaryTbody.innerHTML = '';
         var hasSummary = false;
@@ -401,69 +412,28 @@
           for (var name in summary[month]) {
             hasSummary = true;
             var totalMins = summary[month][name];
-            var h = Math.floor(totalMins / 60);
-            var m = totalMins % 60;
-            var totalStr = h + "시간 " + m + "분";
-
+            var totalStr = Math.floor(totalMins / 60) + "시간 " + (totalMins % 60) + "분";
             var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + month + '</td>' +
-                           '<td>' + name + '</td>' +
-                           '<td style="font-weight:bold; color:#2b7a78;">' + totalStr + '</td>';
+            tr.innerHTML = '<td>' + month + '</td><td>' + name + '</td><td style="font-weight:bold; color:#2b7a78;">' + totalStr + '</td>';
             summaryTbody.appendChild(tr);
           }
         }
-
-        if (!hasSummary) {
-          summaryTbody.innerHTML = '<tr><td colspan="3">집계된 월별 데이터가 없습니다. (퇴근 기록 필요)</td></tr>';
-        }
+        if (!hasSummary) summaryTbody.innerHTML = '<tr><td colspan="3">집계된 데이터가 없습니다.</td></tr>';
 
         var recordTbody = document.getElementById('record-list');
         recordTbody.innerHTML = '';
-
         if (records.length === 0) {
-          recordTbody.innerHTML = '<tr><td colspan="6">등록된 출퇴근 기록이 없습니다.</td></tr>';
+          recordTbody.innerHTML = '<tr><td colspan="6">등록된 기록이 없습니다.</td></tr>';
         } else {
           records.forEach(function(r) {
             var tr = document.createElement('tr');
-            
-            var yearPart = "";
-            var mdPart = "";
-            if (r.date && r.date.length >= 10) {
-              yearPart = r.date.substring(0, 4);
-              var mStr = r.date.substring(5, 7);
-              var dStr = r.date.substring(8, 10);
-              mdPart = dStr + '-' + mStr;
-            } else {
-              mdPart = r.date || '';
-            }
-            var dateHtml = '<div style="font-size:9px; color:#888; line-height:1;">' + yearPart + '</div>' +
-                           '<div style="font-size:11px; font-weight:bold; line-height:1.2; margin-top:1px;">' + mdPart + '</div>';
-            
-            var fullIn = r.checkIn && r.checkIn !== '-' ? r.checkIn : '-';
-            var fullOut = r.checkOut && r.checkOut !== '-' ? r.checkOut : '-';
-
-            var workStr = r.workTimeStr || '근무 중';
-            if (workStr !== '근무 중') {
-              workStr = workStr.replace(/\s*\d+초$/, '');
-            }
-            
-            tr.innerHTML = '<td>' + dateHtml + '</td>' +
-                           '<td>' + r.name + '</td>' +
-                           '<td style="color:#2b7a78; font-size:10px;">' + fullIn + '</td>' +
-                           '<td style="color:#e2584d; font-size:10px;">' + fullOut + '</td>' +
-                           '<td style="font-weight:bold; color:#333;">' + workStr + '</td>' +
-                           '<td class="action-cell">' +
-                             '<button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \'' + (r.outRow || '') + '\')">수정</button>' +
-                           '</td>';
+            var mdPart = r.date && r.date.length >= 10 ? r.date.substring(8, 10) + '-' + r.date.substring(5, 7) : r.date;
+            var workStr = r.workTimeStr === '근무 중' ? '근무 중' : (r.workTimeStr ? r.workTimeStr.replace(/\s*\d+초$/, '') : '-');
+            tr.innerHTML = '<td>' + mdPart + '</td><td>' + r.name + '</td><td style="color:#2b7a78; font-size:10px;">' + (r.checkIn || '-') + '</td><td style="color:#e2584d; font-size:10px;">' + (r.checkOut || '-') + '</td><td style="font-weight:bold;">' + workStr + '</td><td class="action-cell"><button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \'' + (r.outRow || '') + '\')">수정</button></td>';
             recordTbody.appendChild(tr);
           });
         }
-
         document.getElementById('update-time').innerText = '갱신 완료: ' + new Date().toLocaleTimeString();
-      })
-      .catch(err => {
-        alert('서버 통신실패: ' + err);
-        document.getElementById('update-time').innerText = '통신 실패';
       });
     }
 
@@ -474,73 +444,28 @@
       document.getElementById('edit-out-time').value = rawOut;
       document.getElementById('edit-modal').style.display = 'flex';
     }
-
-    function closeEditModal() {
-      document.getElementById('edit-modal').style.display = 'none';
-      currentEditRow = null;
-    }
+    function closeEditModal() { document.getElementById('edit-modal').style.display = 'none'; currentEditRow = null; }
 
     function saveEditedTime() {
-      var newIn = document.getElementById('edit-in-time').value.trim();
-      var newOut = document.getElementById('edit-out-time').value.trim();
-
-      if (!newIn) {
-        alert('출근 시간은 비워둘 수 없습니다.');
-        return;
-      }
-
       fetch(WEB_APP_URL, {
         method: 'POST',
-        body: JSON.stringify({
-          action: 'updateRecord',
-          inRow: currentEditRow.inRow,
-          outRow: currentEditRow.outRow,
-          name: currentEditRow.name,
-          newIn: newIn,
-          newOut: newOut
-        })
+        body: JSON.stringify({ action: 'updateRecord', inRow: currentEditRow.inRow, outRow: currentEditRow.outRow, name: currentEditRow.name, newIn: document.getElementById('edit-in-time').value.trim(), newOut: document.getElementById('edit-out-time').value.trim() })
       })
       .then(res => res.json())
-      .then(res => {
-        alert(res.message);
-        if (res.success) {
-          closeEditModal();
-          loadData();
-        }
-      })
-      .catch(err => alert('통신 오류: ' + err));
+      .then(res => { alert(res.message); if (res.success) { closeEditModal(); loadData(); } });
     }
 
     function deleteRecordFromModal() {
-      if (!currentEditRow) return;
-      deleteRecord(currentEditRow.inRow, currentEditRow.outRow);
-      closeEditModal();
-    }
-
-    function deleteRecord(inRow, outRow) {
-      if (!confirm('정말 이 출퇴근 기록을 삭제하시겠습니까?')) return;
-
+      if (!currentEditRow || !confirm('정말 삭제하시겠습니까?')) return;
       fetch(WEB_APP_URL, {
         method: 'POST',
-        body: JSON.stringify({
-          action: 'deleteRecord',
-          inRow: inRow,
-          outRow: inRow
-        })
+        body: JSON.stringify({ action: 'deleteRecord', inRow: currentEditRow.inRow, outRow: currentEditRow.outRow })
       })
       .then(res => res.json())
-      .then(res => {
-        alert(res.message);
-        if (res.success) {
-          loadData();
-        }
-      })
-      .catch(err => alert('통신 오류: ' + err));
+      .then(res => { alert(res.message); if (res.success) { closeEditModal(); loadData(); } });
     }
 
-    document.getElementById('admin-pw').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') { checkPassword(); }
-    });
+    document.getElementById('admin-pw').addEventListener('keypress', function(e) { if (e.key === 'Enter') checkPassword(); });
   </script>
 </body>
 </html>
