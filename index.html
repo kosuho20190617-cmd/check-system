@@ -23,9 +23,10 @@
     #message { margin-top: 20px; font-size: 15px; font-weight: bold; color: #2b7a78; line-height: 1.5; word-break: break-all; }
 
     .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
-    .top-bar-right { display: flex; gap: 5px; }
-    .top-bar button { padding: 8px 10px; font-size: 12px; background-color: #3aafa9; width: auto; }
+    .top-bar-right { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+    .top-bar button { padding: 8px 8px; font-size: 11px; background-color: #3aafa9; width: auto; }
     .btn-pw-change { background-color: #555 !important; }
+    .btn-log-view { background-color: #2980b9 !important; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; }
     th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
@@ -52,6 +53,10 @@
     .modal-btns button { width: 50%; padding: 12px 0; margin-bottom: 0; font-size: 14px; }
     .btn-cancel { background-color: #ccc; }
     .btn-modal-del { background-color: #e74c3c; width: 100%; margin-top: 8px; padding: 10px 0; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+    /* 로그 전용 모달 스타일 (크기를 더 넓게) */
+    .log-modal-content { background: white; padding: 20px 15px; border-radius: 16px; width: 100%; max-width: 480px; text-align: center; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
+    .log-table-container { overflow-y: auto; max-height: 350px; border: 1px solid #eee; border-radius: 8px; margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -81,7 +86,8 @@
     <div class="top-bar">
       <span id="update-time" style="font-size: 11px; color: #666;">대기 중...</span>
       <div class="top-bar-right">
-        <button class="btn-pw-change" onclick="openPwModal()">비밀번호 변경</button>
+        <button class="btn-log-view" onclick="openLogModal()">접속로그</button>
+        <button class="btn-pw-change" onclick="openPwModal()">비번변경</button>
         <button onclick="loadData()">새로고침</button>
       </div>
     </div>
@@ -145,6 +151,29 @@
     </div>
   </div>
 
+  <!-- 사장님 접속 로그 확인 모달 -->
+  <div id="log-modal" class="modal">
+    <div class="log-modal-content">
+      <h3>👑 사장님 로그인 접속 로그</h3>
+      <p style="font-size: 11px; color: #666; margin-bottom: 5px;">구글 시트의 '접속로그' 시트 기록을 불러옵니다.</p>
+      <div class="log-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 45%;">접속 시간</th>
+              <th style="width: 25%;">구분</th>
+              <th style="width: 30%;">사장님 이름</th>
+            </tr>
+          </thead>
+          <tbody id="log-list">
+            <tr><td colspan="3">로그 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn-boss" style="width: 100%; margin-top: 10px; padding: 10px 0;" onclick="closeLogModal()">닫기</button>
+    </div>
+  </div>
+
   <div id="edit-modal" class="modal">
     <div class="modal-content">
       <h3>근무 시간 수정</h3>
@@ -205,6 +234,54 @@
       document.getElementById('pw-boss-name').value = '';
       document.getElementById('current-pw').value = '';
       document.getElementById('new-pw').value = '';
+    }
+
+    function openLogModal() {
+      document.getElementById('log-modal').style.display = 'flex';
+      loadAdminLogs();
+    }
+
+    function closeLogModal() {
+      document.getElementById('log-modal').style.display = 'none';
+    }
+
+    function loadAdminLogs() {
+      var logTbody = document.getElementById('log-list');
+      logTbody.innerHTML = '<tr><td colspan="3">로그 불러오는 중...</td></tr>';
+
+      fetch(WEB_APP_URL + '?action=getData')
+      .then(res => res.json())
+      .then(result => {
+        // 접속 로그를 가져오기 위해 별도로 시트 데이터를 가져오는 대신, 
+        // 앱 스크립트에 로그 조회를 요청하는 액션을 추가하거나 전체 시트 데이터에서 파싱할 수 있습니다.
+        // 현재 Apps Script 구조상 doGet으로는 main시트만 가져오므로, 
+        // 접속로그를 편하게 불러오기 위해 아래와 같이 별도 fetch나 기존 코드를 활용할 수 있습니다.
+      })
+      .catch(err => {
+        logTbody.innerHTML = '<tr><td colspan="3">로그 불러오기 실패</td></tr>';
+      });
+
+      // 백엔드에서 로그 시트 데이터를 가져오는 로직 추가 구현
+      fetch(WEB_APP_URL + '?action=getLogs')
+      .then(res => res.json())
+      .then(data => {
+        var logs = data.logs || [];
+        logTbody.innerHTML = '';
+        if (logs.length === 0) {
+          logTbody.innerHTML = '<tr><td colspan="3">기록된 접속 로그가 없습니다.</td></tr>';
+          return;
+        }
+        logs.forEach(function(l) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td style="font-size:10px;">' + l.time + '</td>' +
+                         '<td style="font-size:10px; color:#2b7a78;">' + l.type + '</td>' +
+                         '<td style="font-weight:bold; font-size:11px;">' + l.name + '</td>';
+          logTbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        logTbody.innerHTML = '<tr><td colspan="3">로그 데이터 로드 오류</td></tr>';
+      });
     }
 
     function checkPassword() {
@@ -385,7 +462,7 @@
         document.getElementById('update-time').innerText = '갱신 완료: ' + new Date().toLocaleTimeString();
       })
       .catch(err => {
-        alert('서버 통신 실패: ' + err);
+        alert('서버 통신실패: ' + err);
         document.getElementById('update-time').innerText = '통신 실패';
       });
     }
@@ -399,7 +476,7 @@
     }
 
     function closeEditModal() {
-      document.getElementById('edit-modal').style.display, document.getElementById('edit-modal').style.display = 'none';
+      document.getElementById('edit-modal').style.display = 'none';
       currentEditRow = null;
     }
 
