@@ -282,6 +282,9 @@
     var loggedInUser = "";
     var loggedInRole = "";
     var rawDataCache = { records: [], monthlySummary: {} };
+    
+    // 최초 로그인 시 현재 날짜 설정을 위한 플래그
+    var isFirstLoad = true;
 
     function switchView(viewName) {
       document.getElementById('home-view').style.display = 'none';
@@ -302,6 +305,7 @@
         } else {
           document.getElementById('btn-boss-manage').style.display = 'none';
         }
+        isFirstLoad = true; // 관리자 화면 진입 시 오늘 날짜로 초기화되도록 설정
         loadData();
       }
     }
@@ -602,6 +606,7 @@
         renderRecords();
 
         document.getElementById('update-time').innerText = '갱신 완료: ' + new Date().toLocaleTimeString();
+        isFirstLoad = false; // 최초 로드 완료 처리
       });
     }
 
@@ -625,9 +630,6 @@
       var ySelect = document.getElementById('summary-year-select');
       var mSelect = document.getElementById('summary-month-select');
       
-      var curY = ySelect.value;
-      var curM = mSelect.value;
-
       ySelect.innerHTML = '<option value="">년도 선택</option>';
       yearArr.forEach(function(y) {
         ySelect.innerHTML += '<option value="' + y + '">' + y + '년</option>';
@@ -638,8 +640,24 @@
         mSelect.innerHTML += '<option value="' + m + '">' + Number(m) + '월</option>';
       });
 
-      if (yearArr.includes(curY)) ySelect.value = curY;
-      if (monthArr.includes(curM)) mSelect.value = curM;
+      // 최초 로그인(새로고침) 시 현재 연도/월 자동 선택
+      if (isFirstLoad) {
+        var now = new Date();
+        var curY = String(now.getFullYear());
+        var curM = String(now.getMonth() + 1).padStart(2, '0');
+
+        if (yearArr.includes(curY)) {
+          ySelect.value = curY;
+        } else if (yearArr.length > 0) {
+          ySelect.value = yearArr[0];
+        }
+
+        if (monthArr.includes(curM)) {
+          mSelect.value = curM;
+        } else if (monthArr.length > 0) {
+          mSelect.value = monthArr[0];
+        }
+      }
     }
 
     function resetSummaryFilter() {
@@ -699,10 +717,6 @@
       var mSelect = document.getElementById('record-month-select');
       var dSelect = document.getElementById('record-day-select');
 
-      var curY = ySelect.value;
-      var curM = mSelect.value;
-      var curD = dSelect.value;
-
       ySelect.innerHTML = '<option value="">년도 선택</option>';
       yearArr.forEach(function(y) {
         ySelect.innerHTML += '<option value="' + y + '">' + y + '년</option>';
@@ -718,9 +732,31 @@
         dSelect.innerHTML += '<option value="' + d + '">' + Number(d) + '일</option>';
       });
 
-      if (yearArr.includes(curY)) ySelect.value = curY;
-      if (monthArr.includes(curM)) mSelect.value = curM;
-      if (dayArr.includes(curD)) dSelect.value = curD;
+      // 최초 로그인(새로고침) 시 현재 연도/월/일 자동 선택
+      if (isFirstLoad) {
+        var now = new Date();
+        var curY = String(now.getFullYear());
+        var curM = String(now.getMonth() + 1).padStart(2, '0');
+        var curD = String(now.getDate()).padStart(2, '0');
+
+        if (yearArr.includes(curY)) {
+          ySelect.value = curY;
+        } else if (yearArr.length > 0) {
+          ySelect.value = yearArr[0];
+        }
+
+        if (monthArr.includes(curM)) {
+          mSelect.value = curM;
+        } else if (monthArr.length > 0) {
+          mSelect.value = monthArr[0];
+        }
+
+        if (dayArr.includes(curD)) {
+          dSelect.value = curD;
+        } else if (dayArr.length > 0) {
+          dSelect.value = dayArr[0];
+        }
+      }
     }
 
     function resetRecordFilter() {
