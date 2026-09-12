@@ -30,6 +30,10 @@
     .btn-edit-log-view { background-color: #d35400 !important; }
     .btn-boss-manage { background-color: #8e44ad !important; display: none; }
     
+    .filter-box { display: flex; gap: 6px; margin: 8px 0 12px 0; justify-content: flex-start; align-items: center; padding: 0 4px; }
+    .filter-box select { font-size: 12px; padding: 6px; margin-bottom: 0; width: auto; flex: 1; border-radius: 6px; border: 1px solid #ccc; background: #fff; }
+    .filter-box button { padding: 6px 10px; font-size: 12px; width: auto; background-color: #6c757d; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; }
     th, td { padding: 6px 1px; border-bottom: 1px solid #eee; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
     th { background-color: #f1f3f5; color: #333; font-size: 11px; }
@@ -90,33 +94,42 @@
     </div>
 
     <h3>📅 월별 총 근무 시간 요약</h3>
+    <div class="filter-box">
+      <select id="summary-year-select" onchange="renderSummary()"></select>
+      <select id="summary-month-select" onchange="renderSummary()"></select>
+      <button onclick="resetSummaryFilter()">전체보기</button>
+    </div>
     <table>
       <thead>
         <tr>
-          <th>년월</th>
           <th>이름</th>
           <th>총 근무시간</th>
         </tr>
       </thead>
       <tbody id="summary-list">
-        <tr><td colspan="3">데이터 불러오는 중...</td></tr>
+        <tr><td colspan="2">데이터 불러오는 중...</td></tr>
       </tbody>
     </table>
 
     <h3>📋 날짜별 근무 상세 기록</h3>
+    <div class="filter-box">
+      <select id="record-year-select" onchange="renderRecords()"></select>
+      <select id="record-month-select" onchange="renderRecords()"></select>
+      <select id="record-day-select" onchange="renderRecords()"></select>
+      <button onclick="resetRecordFilter()">전체보기</button>
+    </div>
     <table>
       <thead>
         <tr>
-          <th style="width: 13%;">날짜</th>
-          <th style="width: 14%;">이름</th>
-          <th style="width: 21%;">출근</th>
-          <th style="width: 21%;">퇴근</th>
-          <th style="width: 16%;">근무시간</th>
+          <th style="width: 15%;">이름</th>
+          <th style="width: 25%;">출근</th>
+          <th style="width: 25%;">퇴근</th>
+          <th style="width: 20%;">근무시간</th>
           <th style="width: 15%;">관리</th>
         </tr>
       </thead>
       <tbody id="record-list">
-        <tr><td colspan="6">데이터 불러오는 중...</td></tr>
+        <tr><td colspan="5">데이터 불러오는 중...</td></tr>
       </tbody>
     </table>
   </div>
@@ -217,7 +230,7 @@
     </div>
   </div>
 
-  <!-- 수정/삭제 이력 모달 (NEW) -->
+  <!-- 수정/삭제 이력 모달 -->
   <div id="edit-log-modal" class="modal">
     <div class="log-modal-content" style="max-width: 580px;">
       <h3>📋 근무기록 수정 및 삭제 이력</h3>
@@ -268,6 +281,7 @@
     var currentEditBossName = null;
     var loggedInUser = "";
     var loggedInRole = "";
+    var rawDataCache = { records: [], monthlySummary: {} };
 
     function switchView(viewName) {
       document.getElementById('home-view').style.display = 'none';
@@ -363,7 +377,6 @@
       });
     }
 
-    // 수정/삭제 이력 모달 관련 함수 (NEW)
     function openEditLogModal() {
       document.getElementById('edit-log-modal').style.display = 'flex';
       var isMaster = (loggedInRole === 'master');
@@ -518,7 +531,7 @@
       var loginId = document.getElementById('login-id').value.trim();
       var pw = document.getElementById('admin-pw').value;
 
-      if (!loginId) { alert('이름를 입력해주세요.'); return; }
+      if (!loginId) { alert('이름을 입력해주세요.'); return; }
 
       fetch(WEB_APP_URL, {
         method: 'POST',
@@ -579,42 +592,179 @@
       fetch(WEB_APP_URL + '?action=getData')
       .then(res => res.json())
       .then(result => {
-        var records = result.records || [];
-        var summary = result.monthlySummary || {};
-        var summaryTbody = document.getElementById('summary-list');
-        summaryTbody.innerHTML = '';
-        var hasSummary = false;
+        rawDataCache.records = result.records || [];
+        rawDataCache.monthlySummary = result.monthlySummary || {};
+        
+        initSummaryFilters();
+        initRecordFilters();
+        
+        renderSummary();
+        renderRecords();
 
-        for (var month in summary) {
-          for (var name in summary[month]) {
-            hasSummary = true;
-            var totalMins = summary[month][name];
-            var totalStr = Math.floor(totalMins / 60) + "시간 " + (totalMins % 60) + "분";
-            var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + month + '</td><td>' + name + '</td><td style="font-weight:bold; color:#2b7a78;">' + totalStr + '</td>';
-            summaryTbody.appendChild(tr);
-          }
-        }
-        if (!hasSummary) summaryTbody.innerHTML = '<tr><td colspan="3">집계된 데이터가 없습니다.</td></tr>';
-
-        var recordTbody = document.getElementById('record-list');
-        recordTbody.innerHTML = '';
-        if (records.length === 0) {
-          recordTbody.innerHTML = '<tr><td colspan="6">등록된 기록이 없습니다.</td></tr>';
-        } else {
-          records.forEach(function(r) {
-            var tr = document.createElement('tr');
-            var mdPart = r.date && r.date.length >= 10 ? 
-  '<span style="font-size:9px; color:#888; display:block;">' + r.date.substring(0, 4) + '</span>' + 
-  r.date.substring(5, 10) : r.date;
-
-            var workStr = r.workTimeStr === '근무 중' ? '근무 중' : (r.workTimeStr ? r.workTimeStr.replace(/\s*\d+초$/, '') : '-');
-            tr.innerHTML = '<td>' + mdPart + '</td><td>' + r.name + '</td><td style="color:#2b7a78; font-size:10px;">' + (r.checkIn || '-') + '</td><td style="color:#e2584d; font-size:10px;">' + (r.checkOut || '-') + '</td><td style="font-weight:bold;">' + workStr + '</td><td class="action-cell"><button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \' ' + (r.outRow || '') + '\')">수정</button></td>';
-            recordTbody.appendChild(tr);
-          });
-        }
         document.getElementById('update-time').innerText = '갱신 완료: ' + new Date().toLocaleTimeString();
       });
+    }
+
+    // 월별 요약 필터 초기화
+    function initSummaryFilters() {
+      var summary = rawDataCache.monthlySummary;
+      var years = new Set();
+      var months = new Set();
+
+      for (var ym in summary) {
+        var parts = ym.split('-');
+        if (parts.length === 2) {
+          years.add(parts[0]);
+          months.add(parts[1]);
+        }
+      }
+
+      var yearArr = Array.from(years).sort().reverse();
+      var monthArr = Array.from(months).sort();
+
+      var ySelect = document.getElementById('summary-year-select');
+      var mSelect = document.getElementById('summary-month-select');
+      
+      var curY = ySelect.value;
+      var curM = mSelect.value;
+
+      ySelect.innerHTML = '<option value="">년도 선택</option>';
+      yearArr.forEach(function(y) {
+        ySelect.innerHTML += '<option value="' + y + '">' + y + '년</option>';
+      });
+
+      mSelect.innerHTML = '<option value="">월 선택</option>';
+      monthArr.forEach(function(m) {
+        mSelect.innerHTML += '<option value="' + m + '">' + Number(m) + '월</option>';
+      });
+
+      if (yearArr.includes(curY)) ySelect.value = curY;
+      if (monthArr.includes(curM)) mSelect.value = curM;
+    }
+
+    function resetSummaryFilter() {
+      document.getElementById('summary-year-select').value = "";
+      document.getElementById('summary-month-select').value = "";
+      renderSummary();
+    }
+
+    function renderSummary() {
+      var summary = rawDataCache.monthlySummary;
+      var selYear = document.getElementById('summary-year-select').value;
+      var selMonth = document.getElementById('summary-month-select').value;
+      var summaryTbody = document.getElementById('summary-list');
+      summaryTbody.innerHTML = '';
+      var hasSummary = false;
+
+      for (var monthKey in summary) {
+        var parts = monthKey.split('-');
+        var y = parts[0];
+        var m = parts[1];
+
+        if (selYear && y !== selYear) continue;
+        if (selMonth && m !== selMonth) continue;
+
+        for (var name in summary[monthKey]) {
+          hasSummary = true;
+          var totalMins = summary[monthKey][name];
+          var totalStr = Math.floor(totalMins / 60) + "시간 " + (totalMins % 60) + "분";
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + name + '</td><td style="font-weight:bold; color:#2b7a78;">' + totalStr + '</td>';
+          summaryTbody.appendChild(tr);
+        }
+      }
+      if (!hasSummary) summaryTbody.innerHTML = '<tr><td colspan="2">집계된 데이터가 없습니다.</td></tr>';
+    }
+
+    // 날짜별 상세 기록 필터 초기화
+    function initRecordFilters() {
+      var records = rawDataCache.records;
+      var years = new Set();
+      var months = new Set();
+      var days = new Set();
+
+      records.forEach(function(r) {
+        if (r.date && r.date.length >= 10) {
+          years.add(r.date.substring(0, 4));
+          months.add(r.date.substring(5, 7));
+          days.add(r.date.substring(8, 10));
+        }
+      });
+
+      var yearArr = Array.from(years).sort().reverse();
+      var monthArr = Array.from(months).sort();
+      var dayArr = Array.from(days).sort();
+
+      var ySelect = document.getElementById('record-year-select');
+      var mSelect = document.getElementById('record-month-select');
+      var dSelect = document.getElementById('record-day-select');
+
+      var curY = ySelect.value;
+      var curM = mSelect.value;
+      var curD = dSelect.value;
+
+      ySelect.innerHTML = '<option value="">년도 선택</option>';
+      yearArr.forEach(function(y) {
+        ySelect.innerHTML += '<option value="' + y + '">' + y + '년</option>';
+      });
+
+      mSelect.innerHTML = '<option value="">월 선택</option>';
+      monthArr.forEach(function(m) {
+        mSelect.innerHTML += '<option value="' + m + '">' + Number(m) + '월</option>';
+      });
+
+      dSelect.innerHTML = '<option value="">일 선택</option>';
+      dayArr.forEach(function(d) {
+        dSelect.innerHTML += '<option value="' + d + '">' + Number(d) + '일</option>';
+      });
+
+      if (yearArr.includes(curY)) ySelect.value = curY;
+      if (monthArr.includes(curM)) mSelect.value = curM;
+      if (dayArr.includes(curD)) dSelect.value = curD;
+    }
+
+    function resetRecordFilter() {
+      document.getElementById('record-year-select').value = "";
+      document.getElementById('record-month-select').value = "";
+      document.getElementById('record-day-select').value = "";
+      renderRecords();
+    }
+
+    function renderRecords() {
+      var records = rawDataCache.records;
+      var selYear = document.getElementById('record-year-select').value;
+      var selMonth = document.getElementById('record-month-select').value;
+      var selDay = document.getElementById('record-day-select').value;
+
+      var recordTbody = document.getElementById('record-list');
+      recordTbody.innerHTML = '';
+      
+      var filtered = records.filter(function(r) {
+        if (!r.date || r.date.length < 10) return false;
+        var y = r.date.substring(0, 4);
+        var m = r.date.substring(5, 7);
+        var d = r.date.substring(8, 10);
+
+        if (selYear && y !== selYear) return false;
+        if (selMonth && m !== selMonth) return false;
+        if (selDay && d !== selDay) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        recordTbody.innerHTML = '<tr><td colspan="5">등록된 기록이 없습니다.</td></tr>';
+      } else {
+        filtered.forEach(function(r) {
+          var tr = document.createElement('tr');
+          var workStr = r.workTimeStr === '근무 중' ? '근무 중' : (r.workTimeStr ? r.workTimeStr.replace(/\s*\d+초$/, '') : '-');
+          tr.innerHTML = '<td>' + r.name + '</td>' +
+                         '<td style="color:#2b7a78; font-size:10px;">' + (r.checkIn || '-') + '</td>' +
+                         '<td style="color:#e2584d; font-size:10px;">' + (r.checkOut || '-') + '</td>' +
+                         '<td style="font-weight:bold;">' + workStr + '</td>' +
+                         '<td class="action-cell"><button class="btn-action btn-edit" onclick="openEditModal(\'' + r.name + '\', \'' + r.date + '\', \'' + r.rawIn + '\', \'' + (r.rawOut || '') + '\', \'' + r.inRow + '\', \'' + (r.outRow || '') + '\')">수정</button></td>';
+          recordTbody.appendChild(tr);
+        });
+      }
     }
 
     function openEditModal(name, date, rawIn, rawOut, inRow, outRow) {
